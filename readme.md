@@ -32,12 +32,12 @@ Follow these steps to set up and run the project:
    cd MeroHealthAI
 
 2. Create and activate a virtual environment:
-
+    ```bash
     python -m venv venv
     source venv/bin/activate  # On Windows: venv\Scripts\activate
 
 3. Install dependencies:
-    
+    ```bash
     pip install -r requirements.txt
 
 3. Configure your .env file:
@@ -45,22 +45,22 @@ Follow these steps to set up and run the project:
     Create a .env file in the root directory and add the necessary environment variables, such as SECRET_KEY, database configuration, and Celery broker URL.
 
 4. Run migrations:
-
+    ```bash
     python manage.py makemigrations
     python manage.py migrate
 
 6. Start the development server:
-
+    ```bash
     python manage.py runserver
 
 7. (Optional) Start Celery for background tasks:
-
+    ```bash
     celery -A MeroHealthAI worker --loglevel=info
 
 8. (Optional) Start Redis server for Celery:
 
     Ensure Redis is running on your system. Use the following command to start Redis if installed locally:
-
+    ```bash
     redis-server
 
 #### API EndPoints
