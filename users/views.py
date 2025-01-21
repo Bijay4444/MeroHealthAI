@@ -1,3 +1,5 @@
+from rest_framework import generics 
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, AllowAny
@@ -6,17 +8,26 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from .models import CustomUser, CaregiverRelationship, NotificationPreference
 from .serializers import (
     CustomUserSerializer,
+    CustomUserCreateSerializer,
     CaregiverRelationshipSerializer,
     NotificationPreferenceSerializer,
 )
+
+class UserProfileView(generics.RetrieveUpdateAPIView):
+    permission_classes = [IsAuthenticated]
+    serializer_class = CustomUserSerializer
+
+    def get_object(self):
+        return self.request.user
+
 
 class UserRegisterView(APIView):
     permission_classes = [AllowAny]
 
     def post(self, request):
-        serializer = CustomUserSerializer(data=request.data)
+        serializer = CustomUserCreateSerializer(data=request.data)
         if serializer.is_valid():
-            serializer.save()
+            user = serializer.save()
             return Response(serializer.data, status=HTTP_201_CREATED)
         return Response(serializer.errors, status=HTTP_400_BAD_REQUEST)
 

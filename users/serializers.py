@@ -10,6 +10,22 @@ class CustomUserSerializer(serializers.ModelSerializer):
             'is_staff': {'read_only': True},
         }
 
+class CustomUserCreateSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CustomUser
+        fields = ['id', 'email', 'password', 'name', 'age', 'gender']
+        extra_kwargs = {'password': {'write_only': True}}
+
+    def create(self, validated_data):
+        """
+        Override the default create method to hash the password.
+        """
+        password = validated_data.pop('password')  # Extract password
+        user = CustomUser(**validated_data)       # Create user instance
+        user.set_password(password)               # Hash password
+        user.save()                               # Save the user
+        return user
+
 class NotificationPreferenceSerializer(serializers.ModelSerializer):
     class Meta:
         model = NotificationPreference
