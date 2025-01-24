@@ -26,8 +26,13 @@ class CustomUser(AbstractUser):
 
 class NotificationPreference(models.Model):
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
-    notification_type = models.CharField(max_length=50)
+    email = models.BooleanField(default=True)
+    sms = models.BooleanField(default=False)
+    push = models.BooleanField(default=False)
     is_enabled = models.BooleanField(default=True)
+    
+    def __str__(self):
+        return f"NotificationPreference for {self.user}"
 
 class CaregiverRelationship(models.Model):
     user = models.ForeignKey(CustomUser, related_name='patient', on_delete=models.CASCADE)

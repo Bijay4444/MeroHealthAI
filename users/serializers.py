@@ -29,7 +29,7 @@ class CustomUserCreateSerializer(serializers.ModelSerializer):
 class NotificationPreferenceSerializer(serializers.ModelSerializer):
     class Meta:
         model = NotificationPreference
-        fields = ['id', 'user', 'notification_type', 'is_enabled']
+        fields = ['id', 'user', 'email', 'sms', 'push', 'is_enabled']
 
 class CaregiverRelationshipSerializer(serializers.ModelSerializer):
     user_email = serializers.EmailField(source='user.email', read_only=True)

@@ -36,14 +36,14 @@ class CaregiverRelationshipAdmin(admin.ModelAdmin):
 @admin.register(NotificationPreference)
 class NotificationPreferenceAdmin(admin.ModelAdmin):
     model = NotificationPreference
-    list_display = ['user', 'notification_type', 'is_enabled']
+    list_display = ['user', 'email', 'sms', 'push', 'is_enabled']
     fieldsets = (
-        (None, {'fields': ('user', 'notification_type', 'is_enabled')}),
+        (None, {'fields': ('user', 'email', 'sms', 'push', 'is_enabled')}),
     )
     add_fieldsets = (
         (None, {
             'classes': ('wide',),
-            'fields': ('user', 'notification_type', 'is_enabled')}
+            'fields': ('user', 'email', 'sms', 'push', 'is_enabled')}
         ),
     )
     ordering = ['user']
