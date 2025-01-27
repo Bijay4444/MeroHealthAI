@@ -1,31 +1,26 @@
 from rest_framework import serializers
 from .models import Medication, Schedule
 from users.models import CustomUser
+from django.utils import timezone
 
 class MedicationSerializer(serializers.ModelSerializer):
     class Meta:
         model = Medication
-        fields = ['id', 'name', 'instructions']
+        fields = ['id', 'name', 'instructions', 'created_at']
 
 
 class ScheduleSerializer(serializers.ModelSerializer):
-    medication_id = serializers.PrimaryKeyRelatedField(
-        queryset=Medication.objects.all(),
-        source='medication',
-        write_only=True
-    )
-    user_id = serializers.PrimaryKeyRelatedField(
-        queryset=CustomUser.objects.all(),
-        source='user',
-        write_only=True
-    )
-    medication = MedicationSerializer(read_only=True)
-    user = serializers.StringRelatedField(read_only=True)
-
+    medication_details = MedicationSerializer(source='medication', read_only=True)
+    
     class Meta:
         model = Schedule
         fields = [
-            'id', 'medication', 'medication_id', 'user', 'user_id',
-            'dosage', 'time', 'frequency', 'created_at', 'expires_at'
+            'id', 'medication', 'medication_id', 'user', 'user_id', 'medication_details',
+            'dosage', 'time', 'frequency', 'timing', 'created_at', 'expires_at', 'is_active',
         ]
-        read_only_fields = ['created_at']
+        read_only_fields = ['created_at', 'user']
+    
+    def validate_expires_at(self, value):
+        if value and value < timezone.now():
+            raise serializers.ValidationError("Expiry date cannot be in the past")
+        return value
