@@ -25,7 +25,8 @@ SECRET_KEY = 'django-insecure-l3rqn$t0qov)-k9tjxydr&x-zhd&ww%a68&d3fkjcif#f$wxj5
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['*', '192.168.1.5', 'localhost']
+CORS_ALLOW_ALL_ORIGINS = True
 
 
 # Application definition
@@ -160,3 +161,12 @@ CELERY_TIMEZONE = 'Asia/Kathmandu'
 
 #cors headers 
 CORS_ORIGIN_ALLOW_ALL = True
+
+from datetime import timedelta
+
+SIMPLE_JWT = {
+    'ACCESS_TOKEN_LIFETIME': timedelta(days=30),  # Longer access token
+    'REFRESH_TOKEN_LIFETIME': timedelta(days=90),  # Even longer refresh token
+    'ROTATE_REFRESH_TOKENS': True,
+    'BLACKLIST_AFTER_ROTATION': True,
+}

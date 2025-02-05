@@ -15,7 +15,7 @@ class ScheduleSerializer(serializers.ModelSerializer):
     class Meta:
         model = Schedule
         fields = [
-            'id', 'medication', 'medication_id', 'user', 'user_id', 'medication_details',
+            'id', 'medication', 'user', 'user_id', 'medication_details',
             'dosage', 'time', 'frequency', 'timing', 'created_at', 'expires_at', 'is_active',
         ]
         read_only_fields = ['created_at', 'user']

@@ -4,7 +4,7 @@ from .models import CustomUser, NotificationPreference, CaregiverRelationship
 class CustomUserSerializer(serializers.ModelSerializer):
     class Meta:
         model = CustomUser
-        fields = ['id', 'email', 'name', 'age', 'gender', 'is_active', 'is_staff']
+        fields = ['id', 'email', 'name', 'age', 'gender', 'user_type', 'is_active', 'is_staff']
         extra_kwargs = {
             'is_active': {'read_only': True},
             'is_staff': {'read_only': True},
