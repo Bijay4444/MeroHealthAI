@@ -10,25 +10,23 @@ from .models import Schedule, Reminder
 from datetime import timedelta
 
 @shared_task
-def generate_daily_reminders():
-    print("Generating reminders...")  # For debugging
+def send_reminders():
     current_time = timezone.now()
-    schedules = Schedule.objects.filter(
-        is_active=True,
-        expires_at__gt=current_time
+    pending_reminders = Reminder.objects.filter(
+        status='PENDING',
+        sent_time__lte=current_time
     )
     
-    reminders_created = 0
-    for schedule in schedules:
-        Reminder.objects.create(
-            schedule=schedule,
-            sent_time=current_time + timedelta(days=1),
-            status='PENDING'
+    for reminder in pending_reminders:
+        # Send push notification
+        success = send_medication_reminder(
+            reminder.schedule.user,
+            reminder.schedule.medication
         )
-        reminders_created += 1
-    
-    print(f"Created {reminders_created} reminders")  # For debugging
-    return f"Created {reminders_created} reminders"
+        
+        if success:
+            reminder.status = 'SENT'
+            reminder.save()
 
 
 @shared_task

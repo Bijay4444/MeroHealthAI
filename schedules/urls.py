@@ -8,7 +8,7 @@ from .views import (
     AdherenceRecordRetrieveUpdateDestroyView,
     NotificationPreferenceDetailView,
 )
-from .views import upcoming_reminders, mark_reminder_taken
+from .views import upcoming_reminders, mark_reminder_taken, register_device
 
 urlpatterns = [
     path('reminders/', ReminderListCreateView.as_view(), name='reminder-list-create'),
@@ -19,4 +19,6 @@ urlpatterns = [
     path('adherence-records/', AdherenceRecordListCreateView.as_view(), name='adherence-record-list-create'),
     path('adherence-records/<int:pk>/', AdherenceRecordRetrieveUpdateDestroyView.as_view(), name='adherence-record-detail'),
     path('notification-preferences/', NotificationPreferenceDetailView.as_view(), name='notification-preference-detail'),
+
+    path('devices/register/', register_device, name='register-device'),
 ]

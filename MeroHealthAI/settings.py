@@ -9,8 +9,15 @@ https://docs.djangoproject.com/en/5.1/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.1/ref/settings/
 """
+from dotenv import load_dotenv
+
+#Load environment variables from .env file
+load_dotenv()
 
 from pathlib import Path
+import os
+import firebase_admin
+from firebase_admin import credentials
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -44,6 +51,8 @@ INSTALLED_APPS = [
     'rest_framework', 
     'corsheaders',
     'drf_yasg',
+    'fcm_django',
+    'sslserver',
     
     # Local Apps
     'users',
@@ -169,4 +178,19 @@ SIMPLE_JWT = {
     'REFRESH_TOKEN_LIFETIME': timedelta(days=90),  # Even longer refresh token
     'ROTATE_REFRESH_TOKENS': True,
     'BLACKLIST_AFTER_ROTATION': True,
+}
+
+
+# Initialize Firebase Admin
+cred_path = os.path.join(BASE_DIR, "merohealth-5e627-firebase-adminsdk-fbsvc-07570465c6.json")  # downloaded JSON file
+cred = credentials.Certificate(cred_path)
+firebase_admin.initialize_app(cred)
+
+
+#FCM Django settings
+FCM_DJANGO_SETTINGS = {
+    "APP_VERBOSE_NAME": "MeroHealth",
+    "FCM_SERVER_KEY": os.getenv('FCM_SERVER_KEY'),
+    "ONE_DEVICE_PER_USER": True,
+    "DELETE_INACTIVE_DEVICES": True,
 }

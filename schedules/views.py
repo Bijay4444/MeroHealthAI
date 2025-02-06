@@ -8,7 +8,8 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from django.utils import timezone
 from rest_framework import status
-from rest_framework.decorators import api_view
+from rest_framework.decorators import api_view, permission_classes
+from fcm_django.models import FCMDevice
 
 class ReminderListCreateView(generics.ListCreateAPIView):
     serializer_class = ReminderSerializer
@@ -94,3 +95,30 @@ class NotificationPreferenceDetailView(generics.RetrieveUpdateAPIView):
     def get_object(self):
         obj, created = NotificationPreference.objects.get_or_create(user=self.request.user)
         return obj
+
+#device registration view 
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def register_device(request):
+    try:
+        registration_id = request.data.get('registration_id')
+        device_type = request.data.get('device_type', 'android')
+
+        device, created = FCMDevice.objects.get_or_create(
+            registration_id=registration_id,
+            user=request.user,
+            defaults={
+                'type': device_type,
+                'active': True
+            }
+        )
+
+        return Response({
+            'message': 'Device registered successfully',
+            'device_id': device.id
+        })
+    except Exception as e:
+        return Response(
+            {'error': str(e)}, 
+            status=status.HTTP_400_BAD_REQUEST
+        )

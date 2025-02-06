@@ -1,6 +1,16 @@
 from django.db import models
 from medications.models import Schedule
 from users.models import CustomUser
+from fcm_django.models import FCMDevice
+
+class UserDevice(models.Model):
+    user = models.ForeignKey('users.CustomUser', on_delete=models.CASCADE)
+    device = models.OneToOneField(FCMDevice, on_delete=models.CASCADE)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'user_devices'
 
 class Reminder(models.Model):
     REMINDER_STATUS = [
