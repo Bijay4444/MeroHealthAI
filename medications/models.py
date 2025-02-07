@@ -34,5 +34,9 @@ class Schedule(models.Model):
     expires_at = models.DateTimeField(null=True, blank=True)
     is_active = models.BooleanField(default=True)
     
+    @property 
+    def time_iso(self):
+        return self.time.isoformat() if self.time else None
+    
     def __str__(self):
         return f"{self.user.name} - {self.medication.name} at {self.time}"
