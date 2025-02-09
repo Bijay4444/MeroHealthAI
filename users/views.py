@@ -1,9 +1,9 @@
-from rest_framework import generics 
+from rest_framework import generics
+from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated, AllowAny
-from rest_framework.status import HTTP_200_OK, HTTP_201_CREATED, HTTP_400_BAD_REQUEST
 from rest_framework_simplejwt.tokens import RefreshToken
 from .models import CustomUser, CaregiverRelationship, NotificationPreference
 from django.db.models import Q
@@ -31,8 +31,8 @@ class UserRegisterView(APIView):
         serializer = CustomUserCreateSerializer(data=request.data)
         if serializer.is_valid():
             user = serializer.save()
-            return Response(serializer.data, status=HTTP_201_CREATED)
-        return Response(serializer.errors, status=HTTP_400_BAD_REQUEST)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 class UserLoginView(APIView):
     permission_classes = [AllowAny]
@@ -47,17 +47,17 @@ class UserLoginView(APIView):
                 return Response({
                     "refresh": str(refresh),
                     "access": str(refresh.access_token)
-                }, status=HTTP_200_OK)
-            return Response({"detail": "Invalid credentials"}, status=HTTP_400_BAD_REQUEST)
+                }, status=status.HTTP_200_OK)
+            return Response({"detail": "Invalid credentials"}, status=status.HTTP_400_BAD_REQUEST)
         except CustomUser.DoesNotExist:
-            return Response({"detail": "User does not exist"}, status=HTTP_400_BAD_REQUEST)
+            return Response({"detail": "User does not exist"}, status=status.HTTP_400_BAD_REQUEST)
 
 class UserLogoutView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
         request.auth.delete()
-        return Response({"detail": "Logged out successfully"}, status=HTTP_200_OK)
+        return Response({"detail": "Logged out successfully"}, status=status.HTTP_200_OK)
 
 class CaregiverListView(APIView):
     permission_classes = [IsAuthenticated]
@@ -74,27 +74,59 @@ class CaregiverAddView(APIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
-        data = request.data.copy()
-        data['user'] = request.user.id
-        
-        serializer = CaregiverRelationshipSerializer(data=data)
-        if serializer.is_valid():
-            # Check if caregiver exists
+        try:
+            caregiver_email = request.data.get('caregiver_email')
+            relationship_type = request.data.get('relationship', 'FAMILY')
+            permission_level = request.data.get('permission_level', 'VIEW')
+            
+            # Verify user is a patient
+            if request.user.user_type != 'PATIENT':
+                return Response(
+                    {"error": "Only patients can add caregivers"},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            # Find caregiver by email
             try:
-                caregiver = CustomUser.objects.get(id=data.get('caregiver'))
-                if caregiver == request.user:
-                    return Response(
-                        {"error": "Cannot add yourself as caregiver"},
-                        status=HTTP_400_BAD_REQUEST
-                    )
-                serializer.save()
-                return Response(serializer.data, status=HTTP_201_CREATED)
+                caregiver = CustomUser.objects.get(
+                    email=caregiver_email,
+                    user_type='CAREGIVER'
+                )
             except CustomUser.DoesNotExist:
                 return Response(
-                    {"error": "Caregiver not found"},
-                    status=HTTP_400_BAD_REQUEST
+                    {"error": "No caregiver found with this email"},
+                    status=status.HTTP_404_NOT_FOUND
                 )
-        return Response(serializer.errors, status=HTTP_400_BAD_REQUEST)
+
+            # Check if relationship already exists
+            if CaregiverRelationship.objects.filter(
+                user=request.user,
+                caregiver=caregiver
+            ).exists():
+                return Response(
+                    {"error": "This caregiver is already linked to your account"},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            # Create relationship
+            relationship = CaregiverRelationship.objects.create(
+                user=request.user,
+                caregiver=caregiver,
+                relationship=relationship_type,
+                permission_level=permission_level,
+                emergency_contact=request.data.get('emergency_contact', False),
+                notes=request.data.get('notes', '')
+            )
+
+            serializer = CaregiverRelationshipSerializer(relationship)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+        except Exception as e:
+            return Response(
+                {"error": str(e)},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
     
 class CaregiverUpdateView(APIView):
     permission_classes = [IsAuthenticated]
@@ -106,7 +138,7 @@ class CaregiverUpdateView(APIView):
             if relationship.user != request.user:
                 return Response(
                     {"error": "Not authorized to modify this relationship"},
-                    status=HTTP_403_FORBIDDEN
+                    status=status.HTTP_403_FORBIDDEN
                 )
             
             serializer = CaregiverRelationshipSerializer(
@@ -117,9 +149,26 @@ class CaregiverUpdateView(APIView):
             if serializer.is_valid():
                 serializer.save()
                 return Response(serializer.data)
-            return Response(serializer.errors, status=HTTP_400_BAD_REQUEST)
+            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
         except CaregiverRelationship.DoesNotExist:
-            return Response(status=HTTP_404_NOT_FOUND)
+            return Response(status=status.HTTP_404_NOT_FOUND)
+        
+    def delete(self, request, pk):
+        try:
+            relationship = CaregiverRelationship.objects.get(
+                pk=pk,
+                user=request.user  # Ensure only the patient can delete their caregivers
+            )
+            relationship.delete()
+            return Response(
+            {"message": "Caregiver relationship deleted successfully"},
+            status=status.HTTP_200_OK
+            )
+        except CaregiverRelationship.DoesNotExist:
+            return Response(
+                {"error": "Relationship not found"},
+                status=status.HTTP_404_NOT_FOUND
+            )
 
 class NotificationPreferenceView(APIView):
     permission_classes = [IsAuthenticated]
@@ -139,8 +188,8 @@ class NotificationPreferenceUpdateView(APIView):
         )
         if serializer.is_valid():
             serializer.save()
-            return Response(serializer.data, status=HTTP_201_CREATED)
-        return Response(serializer.errors, status=HTTP_400_BAD_REQUEST)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 #caregiver login
@@ -153,8 +202,8 @@ class CaregiverRegisterView(APIView):
         serializer = CustomUserCreateSerializer(data=data)
         if serializer.is_valid():
             user = serializer.save()
-            return Response(serializer.data, status=HTTP_201_CREATED)
-        return Response(serializer.errors, status=HTTP_400_BAD_REQUEST)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 class CaregiverDashboardView(APIView):
     permission_classes = [IsAuthenticated, IsCaregiverPermission]
@@ -163,7 +212,7 @@ class CaregiverDashboardView(APIView):
         if request.user.user_type != 'CAREGIVER':
             return Response(
                 {"error": "Only caregivers can access this view"},
-                status=HTTP_403_FORBIDDEN
+                status=status.HTTP_403_FORBIDDEN
             )
         
         relationships = CaregiverRelationship.objects.filter(
@@ -183,3 +232,4 @@ class CaregiverDashboardView(APIView):
             patients_data.append(patient_data)
             
         return Response(patients_data)
+
