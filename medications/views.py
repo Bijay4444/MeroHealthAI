@@ -1,6 +1,7 @@
 from rest_framework import status
 from rest_framework.views import APIView
 from .models import Medication, Schedule
+from users.models import CaregiverRelationship
 from .serializers import MedicationSerializer, ScheduleSerializer
 from rest_framework import generics, permissions
 from rest_framework.response import Response
@@ -106,3 +107,41 @@ class MedicationScheduleCreateView(APIView):
             return Response({
                 'error': str(e)
             }, status=status.HTTP_400_BAD_REQUEST)
+            
+
+# caregiver view of patient medication
+class PatientMedicationScheduleView(generics.ListAPIView):
+    serializer_class = ScheduleSerializer
+    permission_classes = [permissions.IsAuthenticated]
+    
+    def get_queryset(self):
+        patient_id = self.request.query_params.get('user', None)
+        user = self.request.user
+
+        if not patient_id:
+            return Schedule.objects.none()
+
+        # If user is a caregiver, check if they have permission to view this patient's medications
+        if user.user_type == 'CAREGIVER':
+            has_permission = CaregiverRelationship.objects.filter(
+                caregiver=user,
+                user_id=patient_id,
+                can_view_adherence=True
+            ).exists()
+            
+            if has_permission:
+                return Schedule.objects.filter(
+                    user_id=patient_id,
+                    is_active=True
+                ).order_by('time')
+            return Schedule.objects.none()
+            
+        # If user is viewing their own medications
+        elif str(user.id) == str(patient_id):
+            return Schedule.objects.filter(
+                user=user,
+                is_active=True
+            ).order_by('time')
+            
+        return Schedule.objects.none()
+
