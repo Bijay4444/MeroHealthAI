@@ -1,5 +1,3 @@
-# schedules/urls.py
-
 from django.urls import path
 from .views import (
     ReminderListCreateView,
@@ -7,6 +5,7 @@ from .views import (
     AdherenceRecordListCreateView,
     AdherenceRecordRetrieveUpdateDestroyView,
     NotificationPreferenceDetailView,
+    MedicationAdherenceScoreView
 )
 from .views import upcoming_reminders, mark_reminder_taken, register_device
 
@@ -18,6 +17,8 @@ urlpatterns = [
     
     path('adherence-records/', AdherenceRecordListCreateView.as_view(), name='adherence-record-list-create'),
     path('adherence-records/<int:pk>/', AdherenceRecordRetrieveUpdateDestroyView.as_view(), name='adherence-record-detail'),
+    path('adherence-score/', MedicationAdherenceScoreView.as_view(), name='adherence-score'),
+
     path('notification-preferences/', NotificationPreferenceDetailView.as_view(), name='notification-preference-detail'),
 
     path('devices/register/', register_device, name='register-device'),

@@ -10,7 +10,9 @@ from django.utils import timezone
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
 from fcm_django.models import FCMDevice
-
+from datetime import timedelta
+from django.db.models import F
+from rest_framework.views import APIView
 class ReminderListCreateView(generics.ListCreateAPIView):
     serializer_class = ReminderSerializer
     permission_classes = [IsAuthenticated]
@@ -95,6 +97,67 @@ class NotificationPreferenceDetailView(generics.RetrieveUpdateAPIView):
     def get_object(self):
         obj, created = NotificationPreference.objects.get_or_create(user=self.request.user)
         return obj
+
+################# AdherenceRecord Scoring Algorithm ##########################
+class MedicationAdherenceScoreView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def calculate_adherence_score(self, user_id, time_period=30):
+        """
+        Calculate medication adherence score using a weighted algorithm
+        - Taken on time (within 30 mins): full weight (1.0)
+        - Taken late (after 30 mins): half weight (0.5)
+        - Skipped/Not taken: zero weight (0.0)
+        """
+        end_date = timezone.now()
+        start_date = end_date - timedelta(days=time_period)
+        
+        # Get all reminders for the user in the time period
+        reminders = Reminder.objects.filter(
+            schedule__user_id=user_id,
+            sent_time__gte=start_date,
+            sent_time__lte=end_date
+        )
+        
+        total_reminders = reminders.count()
+        if total_reminders == 0:
+            return 100
+            
+        # Count reminders taken on time (within 30 minutes)
+        taken_on_time = AdherenceRecord.objects.filter(
+            reminder__in=reminders,
+            status='TAKEN',
+            taken_time__lte=F('reminder__sent_time') + timedelta(minutes=30)
+        ).count()
+        
+        # Count reminders taken late (after 30 minutes)
+        taken_late = AdherenceRecord.objects.filter(
+            reminder__in=reminders,
+            status='TAKEN',
+            taken_time__gt=F('reminder__sent_time') + timedelta(minutes=30)
+        ).count()
+        
+        # Calculate weighted score
+        score = ((taken_on_time + (0.5 * taken_late)) / total_reminders) * 100
+        return round(score, 2)
+
+    def get(self, request):
+        score = self.calculate_adherence_score(request.user.id)
+        return Response({
+            'adherence_score': score,
+            'user': request.user.id,
+            'message': self.get_adherence_message(score)
+        })
+    
+    def get_adherence_message(self, score):
+        if score >= 90:
+            return "Excellent medication adherence!"
+        elif score >= 80:
+            return "Good adherence, but there's room for improvement."
+        elif score >= 70:
+            return "Moderate adherence. Try to be more consistent."
+        else:
+            return "Your medication adherence needs improvement. Consider setting additional reminders."
 
 #device registration view 
 @api_view(['POST'])

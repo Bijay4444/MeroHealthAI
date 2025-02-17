@@ -32,17 +32,84 @@ class MedicationRetrieveUpdateDestroyView(generics.RetrieveUpdateDestroyAPIView)
             schedule__user=self.request.user
         ).distinct()
 
+########## Merge Sort Algorithm implementation for medication schedule ###########
 class ScheduleListCreateView(generics.ListCreateAPIView):
     serializer_class = ScheduleSerializer
     permission_classes = [permissions.IsAuthenticated]
     
+    def get_priority_weight(self, schedule):
+        """
+        Calculate priority weight based on medication timing and frequency
+        Higher weight = higher priority
+        """
+        priority = 0
+        current_time = timezone.now()
+        schedule_time = schedule.time
+        
+        # Timing priority
+        if schedule.timing == 'BEFORE_MEAL':
+            priority += 3
+        elif schedule.timing == 'AFTER_MEAL':
+            priority += 2
+        else:
+            priority += 1
+            
+        # Frequency priority
+        if schedule.frequency == 'DAILY':
+            priority += 3
+        elif schedule.frequency == 'WEEKLY':
+            priority += 2
+        else:
+            priority += 1
+            
+        return priority
+
+    def sort_schedules_by_priority(self, schedules):
+        """
+        Sort schedules by priority using merge sort
+        """
+        if len(schedules) <= 1:
+            return schedules
+            
+        mid = len(schedules) // 2
+        left = self.sort_schedules_by_priority(schedules[:mid])
+        right = self.sort_schedules_by_priority(schedules[mid:])
+        
+        return self.merge_sorted_schedules(left, right)
+    
+    def merge_sorted_schedules(self, left, right):
+        """
+        Merge two sorted lists of schedules based on priority
+        """
+        result = []
+        i = j = 0
+        
+        while i < len(left) and j < len(right):
+            left_priority = self.get_priority_weight(left[i])
+            right_priority = self.get_priority_weight(right[j])
+            
+            if left_priority >= right_priority:
+                result.append(left[i])
+                i += 1
+            else:
+                result.append(right[j])
+                j += 1
+                
+        result.extend(left[i:])
+        result.extend(right[j:])
+        return result
+    
     def get_queryset(self):
         user = self.request.user
-        return Schedule.objects.filter(
+        schedules = Schedule.objects.filter(
             user=user,
             is_active=True,
             expires_at__gt=timezone.now()
         ).order_by('time')
+        
+        # Converting queryset to list and sort by priority
+        schedules_list = list(schedules)
+        return self.sort_schedules_by_priority(schedules_list)
     
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
