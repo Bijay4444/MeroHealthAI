@@ -5,7 +5,7 @@ from users.models import CaregiverRelationship
 from .serializers import MedicationSerializer, ScheduleSerializer
 from rest_framework import generics, permissions
 from rest_framework.response import Response
-from rest_framework.decorators import action
+from rest_framework.decorators import action, api_view, permission_classes
 from django.utils import timezone
 
 class MedicationListCreateView(generics.ListCreateAPIView):
@@ -113,6 +113,8 @@ class ScheduleListCreateView(generics.ListCreateAPIView):
     
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
+        # Generate reminders for the newly created schedule
+        schedule.generate_reminders()
 
     @action(detail=False, methods=['GET'])
     def today(self, request):
@@ -160,6 +162,9 @@ class MedicationScheduleCreateView(APIView):
             schedule_serializer = ScheduleSerializer(data=schedule_data)
             schedule_serializer.is_valid(raise_exception=True)
             schedule = schedule_serializer.save(user=request.user)
+            
+            # Generate reminders for the newly created schedule
+            schedule.generate_reminders()
 
             # Return combined response
             return Response({
@@ -174,7 +179,19 @@ class MedicationScheduleCreateView(APIView):
             return Response({
                 'error': str(e)
             }, status=status.HTTP_400_BAD_REQUEST)
-            
+
+# Add an endpoint to manually generate reminders for an existing schedule
+@api_view(['POST'])
+@permission_classes([permissions.IsAuthenticated])
+def generate_reminders(request, schedule_id):
+    try:
+        schedule = Schedule.objects.get(id=schedule_id, user=request.user)
+        schedule.generate_reminders()
+        return Response({'message': f'Reminders generated for {schedule}'})
+    except Schedule.DoesNotExist:
+        return Response({'error': 'Schedule not found'}, status=404)
+
+
 
 # caregiver view of patient medication
 class PatientMedicationScheduleView(generics.ListAPIView):

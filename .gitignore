@@ -166,3 +166,6 @@ static/
 
 # Ignore the firebase admin sdk file
 merohealth-5e627-firebase-adminsdk-fbsvc-07570465c6.json
+
+# Ignore the redis file
+redis.conf 

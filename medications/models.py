@@ -1,5 +1,9 @@
 from django.db import models
 from users.models import CustomUser
+from django.db.models.signals import post_save
+from django.dispatch import receiver
+from django.utils import timezone
+from datetime import datetime, timedelta
 
 class Medication(models.Model):
     FREQUENCY_CHOICES = [
@@ -40,3 +44,65 @@ class Schedule(models.Model):
     
     def __str__(self):
         return f"{self.user.name} - {self.medication.name} at {self.time}"
+    
+    def generate_reminders(self, days_ahead=1):  # Changed from 30 to 1
+        """Generate reminders for this schedule based on frequency."""
+        from schedules.models import Reminder
+        
+        today = timezone.now().date()
+        end_date = today + timedelta(days=days_ahead)
+        
+        # Clear any future pending reminders for this schedule
+        Reminder.objects.filter(
+            schedule=self,
+            sent_time__date__gte=today,
+            status='PENDING'
+        ).delete()
+        
+        current_date = today
+        while current_date <= end_date:
+            reminder_time = timezone.make_aware(datetime.combine(current_date, self.time))
+            
+            # Check if a reminder already exists for this schedule and time
+            existing_reminder = Reminder.objects.filter(
+                schedule=self,
+                sent_time__date=current_date,
+            ).exists()
+            
+            if existing_reminder:
+                # Skip creating a duplicate reminder
+                current_date += timedelta(days=1)
+                continue
+                
+            # For DAILY frequency - create for every day
+            if self.frequency == 'DAILY':
+                Reminder.objects.create(
+                    schedule=self,
+                    sent_time=reminder_time,
+                    status='PENDING'
+                )
+            
+            # For WEEKLY frequency - only create if it's the same day of week
+            elif self.frequency == 'WEEKLY' and current_date.weekday() == today.weekday():
+                Reminder.objects.create(
+                    schedule=self,
+                    sent_time=reminder_time,
+                    status='PENDING'
+                )
+            
+            # For MONTHLY frequency - only create if it's the same day of month
+            elif self.frequency == 'MONTHLY' and current_date.day == today.day:
+                Reminder.objects.create(
+                    schedule=self,
+                    sent_time=reminder_time,
+                    status='PENDING'
+                )
+            
+            # No reminders for AS_NEEDED frequency
+            
+            current_date += timedelta(days=1)
+
+# a signal to automatically generate reminders when a schedule is created or updated
+@receiver(post_save, sender=Schedule)
+def schedule_post_save(sender, instance, created, **kwargs):
+    instance.generate_reminders()

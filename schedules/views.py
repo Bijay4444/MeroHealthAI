@@ -1,6 +1,6 @@
 from rest_framework import generics
 from rest_framework.permissions import IsAuthenticated
-from .models import Reminder, AdherenceRecord
+from .models import Reminder, AdherenceRecord, UserDevice
 from users.models import NotificationPreference
 from users.serializers import NotificationPreferenceSerializer
 from .serializers import ReminderSerializer, AdherenceRecordSerializer
@@ -9,10 +9,13 @@ from rest_framework.response import Response
 from django.utils import timezone
 from rest_framework import status
 from rest_framework.decorators import api_view, permission_classes
-from fcm_django.models import FCMDevice
+# from fcm_django.models import FCMDevice
+from exponent_server_sdk import PushClient, PushMessage
 from datetime import timedelta
 from django.db.models import F
 from rest_framework.views import APIView
+
+expo_client = PushClient()
 class ReminderListCreateView(generics.ListCreateAPIView):
     serializer_class = ReminderSerializer
     permission_classes = [IsAuthenticated]
@@ -164,15 +167,21 @@ class MedicationAdherenceScoreView(APIView):
 @permission_classes([IsAuthenticated])
 def register_device(request):
     try:
-        registration_id = request.data.get('registration_id')
-        device_type = request.data.get('device_type', 'android')
+        expo_token = request.data.get('registration_id')
+        
+        # Validate Expo token format
+        if not expo_client.is_expo_push_token(expo_token):
+            return Response(
+                {'error': 'Invalid Expo push token'}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
-        device, created = FCMDevice.objects.get_or_create(
-            registration_id=registration_id,
+        # Update or create device registration
+        device, created = UserDevice.objects.update_or_create(
             user=request.user,
             defaults={
-                'type': device_type,
-                'active': True
+                'expo_token': expo_token,
+                'is_active': True
             }
         )
 

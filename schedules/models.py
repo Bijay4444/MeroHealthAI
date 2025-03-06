@@ -5,7 +5,8 @@ from fcm_django.models import FCMDevice
 
 class UserDevice(models.Model):
     user = models.ForeignKey('users.CustomUser', on_delete=models.CASCADE)
-    device = models.OneToOneField(FCMDevice, on_delete=models.CASCADE)
+    expo_token = models.CharField(max_length=255)
+    is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

@@ -10,6 +10,7 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.1/ref/settings/
 """
 from dotenv import load_dotenv
+from celery.schedules import crontab
 
 #Load environment variables from .env file
 load_dotenv()
@@ -193,4 +194,20 @@ FCM_DJANGO_SETTINGS = {
     "FCM_SERVER_KEY": os.getenv('FCM_SERVER_KEY'),
     "ONE_DEVICE_PER_USER": True,
     "DELETE_INACTIVE_DEVICES": True,
+}
+
+#celery beat schedule
+CELERY_BEAT_SCHEDULE = {
+    'generate-daily-reminders': {
+        'task': 'schedules.tasks.generate_daily_reminders',
+        'schedule': crontab(hour=0, minute=0),  # Run at midnight every day
+    },
+    'check-upcoming-reminders': {
+        'task': 'schedules.tasks.check_upcoming_reminders',
+        'schedule': crontab(minute='*/15'),  # Run every 15 minutes
+    },
+    'clean-old-reminders': {
+        'task': 'schedules.tasks.clean_old_reminders',
+        'schedule': crontab(hour=1, minute=0, day_of_week=1),  # Run at 1 AM every Monday
+    },
 }

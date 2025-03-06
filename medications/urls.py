@@ -5,7 +5,8 @@ from .views import (
     ScheduleListCreateView,
     ScheduleRetrieveUpdateDestroyView,
     MedicationScheduleCreateView,
-    PatientMedicationScheduleView 
+    PatientMedicationScheduleView,
+    generate_reminders 
 )
 
 urlpatterns = [
@@ -15,4 +16,6 @@ urlpatterns = [
     path('schedules/<int:pk>/', ScheduleRetrieveUpdateDestroyView.as_view(), name='schedule-detail'),
     path('create-with-schedule/', MedicationScheduleCreateView.as_view(), name='medication-schedule-create'),
     path('schedules/patient/', PatientMedicationScheduleView.as_view(), name='patient-medications'),
+
+    path('schedules/<int:schedule_id>/generate-reminders/', generate_reminders, name='generate-reminders'),
 ]
