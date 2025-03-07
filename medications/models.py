@@ -61,7 +61,11 @@ class Schedule(models.Model):
         
         current_date = today
         while current_date <= end_date:
-            reminder_time = timezone.make_aware(datetime.combine(current_date, self.time))
+            #use the time as entered by user without timezone
+            local_time = datetime.combine(current_date, self.time)
+            
+            #convert to UTC for storing in the database
+            reminder_time = timezone.make_aware(local_time)
             
             # Check if a reminder already exists for this schedule and time
             existing_reminder = Reminder.objects.filter(

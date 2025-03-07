@@ -129,7 +129,7 @@ AUTH_PASSWORD_VALIDATORS = [
 
 LANGUAGE_CODE = 'en-us'
 
-TIME_ZONE = 'UTC'
+TIME_ZONE = 'Asia/Kathmandu'
 
 USE_I18N = True
 
@@ -204,7 +204,7 @@ CELERY_BEAT_SCHEDULE = {
     },
     'check-upcoming-reminders': {
         'task': 'schedules.tasks.check_upcoming_reminders',
-        'schedule': crontab(minute='*/15'),  # Run every 15 minutes
+        'schedule': crontab(minute='*/5'),  # Run every 5 minutes
     },
     'clean-old-reminders': {
         'task': 'schedules.tasks.clean_old_reminders',
