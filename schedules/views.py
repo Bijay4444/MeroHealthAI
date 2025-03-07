@@ -52,25 +52,60 @@ def upcoming_reminders(request):
 def mark_reminder_taken(request, pk):
     try:
         reminder = Reminder.objects.get(pk=pk, schedule__user=request.user)
-        # Get or create adherence record
-        adherence_record, created = AdherenceRecord.objects.get_or_create(
-            reminder=reminder,
-            defaults={
-                'taken_time': timezone.now(),
-                'status': 'TAKEN'
-            }
-        )
         
-        # If record exists, update it
-        if not created:
-            adherence_record.taken_time = timezone.now()
-            adherence_record.status = 'TAKEN'
-            adherence_record.save()
+        # Attempt to create or update adherence record
+        try:
+            adherence_record, created = AdherenceRecord.objects.get_or_create(
+                reminder=reminder,
+                defaults={
+                    'taken_time': timezone.now(),
+                    'status': 'TAKEN'
+                }
+            )
+            
+            # If record exists, update it
+            if not created:
+                adherence_record.taken_time = timezone.now()
+                adherence_record.status = 'TAKEN'
+                adherence_record.save()
+        except IntegrityError:
+            return Response(
+                {"error": "Adherence record with this reminder already exists."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        # Update the reminder status to SENT
+        reminder.status = 'SENT'
+        reminder.save()
             
         return Response(status=status.HTTP_200_OK)
     except Reminder.DoesNotExist:
         return Response(status=status.HTTP_404_NOT_FOUND)
 
+
+ # View for handling "skips"   
+@api_view(['POST'])
+def mark_reminder_skipped(request, pk):
+    try:
+        reminder = Reminder.objects.get(pk=pk, schedule__user=request.user)
+        reminder.status = 'SKIPPED' #Or whatever status you choose.
+        reminder.save()
+
+        # Attempt to create an adherence record
+        AdherenceRecord.objects.create(
+        reminder=reminder,
+        taken_time=timezone.now(),
+        status='SKIPPED'
+        ) #Status must be from ADHERENCE_STATUS choices
+
+        return Response(status=status.HTTP_200_OK)
+    except Reminder.DoesNotExist:
+        return Response(status=status.HTTP_404_NOT_FOUND)
+    except IntegrityError:
+            return Response(
+                {"error": "Adherence record with this reminder already exists."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
 
 class AdherenceRecordListCreateView(generics.ListCreateAPIView):
     serializer_class = AdherenceRecordSerializer

@@ -76,7 +76,7 @@ class Schedule(models.Model):
                 
             # For DAILY frequency - create for every day
             if self.frequency == 'DAILY':
-                Reminder.objects.create(
+                Reminder.objects.get_or_create(
                     schedule=self,
                     sent_time=reminder_time,
                     status='PENDING'
@@ -84,7 +84,7 @@ class Schedule(models.Model):
             
             # For WEEKLY frequency - only create if it's the same day of week
             elif self.frequency == 'WEEKLY' and current_date.weekday() == today.weekday():
-                Reminder.objects.create(
+                Reminder.objects.get_or_create(
                     schedule=self,
                     sent_time=reminder_time,
                     status='PENDING'
@@ -92,7 +92,7 @@ class Schedule(models.Model):
             
             # For MONTHLY frequency - only create if it's the same day of month
             elif self.frequency == 'MONTHLY' and current_date.day == today.day:
-                Reminder.objects.create(
+                Reminder.objects.get_or_create(
                     schedule=self,
                     sent_time=reminder_time,
                     status='PENDING'
