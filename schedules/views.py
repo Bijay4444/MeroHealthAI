@@ -14,6 +14,7 @@ from exponent_server_sdk import PushClient, PushMessage
 from datetime import timedelta
 from django.db.models import F
 from rest_framework.views import APIView
+from django.db import IntegrityError
 
 expo_client = PushClient()
 class ReminderListCreateView(generics.ListCreateAPIView):
@@ -87,25 +88,37 @@ def mark_reminder_taken(request, pk):
 @api_view(['POST'])
 def mark_reminder_skipped(request, pk):
     try:
-        reminder = Reminder.objects.get(pk=pk, schedule__user=request.user)
-        reminder.status = 'SKIPPED' #Or whatever status you choose.
-        reminder.save()
-
-        # Attempt to create an adherence record
-        AdherenceRecord.objects.create(
-        reminder=reminder,
-        taken_time=timezone.now(),
-        status='SKIPPED'
-        ) #Status must be from ADHERENCE_STATUS choices
-
-        return Response(status=status.HTTP_200_OK)
-    except Reminder.DoesNotExist:
-        return Response(status=status.HTTP_404_NOT_FOUND)
-    except IntegrityError:
-            return Response(
-                {"error": "Adherence record with this reminder already exists."},
-                status=status.HTTP_400_BAD_REQUEST
+        reminder = Reminder.objects.get(id=pk)
+        
+        # Try to get existing record first, update if exists
+        try:
+            adherence_record, created = AdherenceRecord.objects.get_or_create(
+                reminder=reminder,
+                defaults={
+                    'status': 'SKIPPED',
+                }
             )
+            
+            # If record exists but isn't skipped, update it
+            if not created:
+                adherence_record.status = 'SKIPPED'
+                adherence_record.save()
+                
+        except IntegrityError:
+            # Handle the case where a record already exists
+            existing_record = AdherenceRecord.objects.get(reminder=reminder)
+            existing_record.status = 'SKIPPED'
+            existing_record.save()
+        
+        # Update reminder status
+        reminder.status = 'SKIPPED'
+        reminder.save()
+        
+        return Response({'status': 'success'})
+    except Reminder.DoesNotExist:
+        return Response({'error': 'Reminder not found'}, status=404)
+    except Exception as e:
+        return Response({'error': str(e)}, status=400)
 
 class AdherenceRecordListCreateView(generics.ListCreateAPIView):
     serializer_class = AdherenceRecordSerializer
