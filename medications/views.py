@@ -7,6 +7,7 @@ from rest_framework import generics, permissions
 from rest_framework.response import Response
 from rest_framework.decorators import action, api_view, permission_classes
 from django.utils import timezone
+from schedules.tasks import check_upcoming_reminders
 
 class MedicationListCreateView(generics.ListCreateAPIView):
     serializer_class = MedicationSerializer
@@ -165,6 +166,24 @@ class MedicationScheduleCreateView(APIView):
             
             # Generate reminders for the newly created schedule
             schedule.generate_reminders()
+            
+            # # Trigger the check_upcoming_reminders task immediately
+            try:
+            #     # Trigger the check_upcoming_reminders task immediately
+            #     check_upcoming_reminders.apply_async()
+                result = check_upcoming_reminders()
+                print(f"Check upcoming reminders result: {result}")
+
+                # Return combined response
+                return Response({
+                    'medication': medication_serializer.data,
+                    'schedule': schedule_serializer.data
+                }, status=status.HTTP_201_CREATED)
+                
+            except Exception as e:
+                print(f"Error calling check_upcoming_reminders: {str(e)}")
+                # Don't return here, continue with the response
+
 
             # Return combined response
             return Response({
@@ -173,7 +192,7 @@ class MedicationScheduleCreateView(APIView):
             }, status=status.HTTP_201_CREATED)
 
         except Exception as e:
-            # If anything fails, delete the medication if it was created
+            print(f"Error in MedicationScheduleCreateView: {str(e)}")
             if 'medication' in locals():
                 medication.delete()
             return Response({

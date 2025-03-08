@@ -162,12 +162,14 @@ REST_FRAMEWORK = {
 AUTH_USER_MODEL = 'users.CustomUser'
 
 #Celeery settings
-CELERY_BROKER_URL = 'redis://localhost:6379'
-CELERY_RESULT_BACKEND = 'redis://localhost:6379'
+CELERY_BROKER_URL = 'redis://localhost:6380'
+CELERY_RESULT_BACKEND = 'redis://localhost:6380'
 CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
 CELERY_TIMEZONE = 'Asia/Kathmandu'
+CELERY_TASK_TRACK_STARTED = True
+CELERY_TASK_TIME_LIMIT = 30 * 60  # Set a reasonable timeout
 
 #cors headers 
 CORS_ORIGIN_ALLOW_ALL = True
@@ -202,9 +204,9 @@ CELERY_BEAT_SCHEDULE = {
         'task': 'schedules.tasks.generate_daily_reminders',
         'schedule': crontab(hour=0, minute=0),  # Run at midnight every day
     },
-    'check-upcoming-reminders': {
+     'check-upcoming-reminders': {
         'task': 'schedules.tasks.check_upcoming_reminders',
-        'schedule': crontab(minute='*/5'),  # Run every 5 minutes
+        'schedule': crontab(minute='*'),  # Run every minute
     },
     'clean-old-reminders': {
         'task': 'schedules.tasks.clean_old_reminders',
