@@ -85,17 +85,6 @@ MeroHealthAI is a Django-based backend application that provides a robust API fo
 - `GET /schedules/adherence-records/`: Get adherence records
 - `GET /schedules/adherence-records/{id}/`: Get specific adherence record
 
-## Project Structure
-MeroHealthAI/
-├── MeroHealthAI/ # Project settings
-├── users/ # User authentication and management
-├── medications/ # Medication management
-├── schedules/ # Reminder scheduling and adherence tracking
-├── chat/ # Communication features
-├── requirements.txt # Project dependencies
-└── README.md # Project documentation
-
-
 ## Celery Tasks
 
 The project uses Celery for scheduled tasks:
