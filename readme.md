@@ -1,105 +1,151 @@
-# MeroHealthAI
+MeroHealthAI - Medication Reminder System
+A comprehensive medication management system designed to help users track and adhere to their medication schedules through timely reminders and adherence monitoring.
 
-MeroHealthAI is a Django-based REST API project designed to simplify healthcare management. This application provides APIs for managing users, medications, schedules, and real-time communication through chat functionality.
+Overview
+MeroHealthAI is a Django-based backend application that provides a robust API for medication management, scheduling reminders, and tracking adherence. The system uses Celery for task scheduling to ensure timely medication reminders and notifications.
 
-## Features
+Features
+User Authentication: Secure JWT-based authentication system
 
-- **User Management**: Register, authenticate, and manage users.
-- **Medications**: Manage medication details, prescriptions, and schedules.
-- **Schedules**: Create and manage schedules for patients and healthcare professionals.
-- **Chat System**: Real-time communication between patients and healthcare professionals.
-- **Task Management**: Background task handling with Celery.
+Medication Management: Create, update, and track medications
 
+Reminder Scheduling: Set up custom medication schedules with various frequencies
 
-## Installation
+Real-time Notifications: Receive timely reminders for medication doses
 
-Follow these steps to set up and run the project:
+Adherence Tracking: Monitor medication adherence with detailed reports
 
-### Prerequisites
+Caregiver Support: Allow caregivers to monitor patient medication adherence
 
-- Python 3.8+
-- Pip
-- Virtualenv
-- Redis (for Celery)
-- Git
+Tech Stack
+Backend: Django 5.1.5, Django REST Framework
 
-### Setup
+Database: SQLite (development), PostgreSQL (production ready)
 
-1. Clone the repository:
+Task Scheduling: Celery with Redis broker
 
-   ```bash
-   git clone https://github.com/yourusername/MeroHealthAI.git
-   cd MeroHealthAI
+Authentication: JWT (JSON Web Tokens)
 
-2. Create and activate a virtual environment:
-    ```bash
-    python -m venv venv
-    source venv/bin/activate  # On Windows: venv\Scripts\activate
+Notifications: Firebase Cloud Messaging (FCM)
 
-3. Install dependencies:
-    ```bash
-    pip install -r requirements.txt
+Time Management: Timezone-aware scheduling with pytz
 
-3. Configure your .env file:
+Requirements
+Python 3.10+
 
-    Create a .env file in the root directory and add the necessary environment variables, such as SECRET_KEY, database configuration, and Celery broker URL.
+Redis Server (for Celery)
 
-4. Run migrations:
-    ```bash
-    python manage.py makemigrations
-    python manage.py migrate
+Firebase Admin SDK credentials (for push notifications)
 
-6. Start the development server:
-    ```bash
-    python manage.py runserver
+Installation
+Clone the repository:
 
-7. (Optional) Start Celery for background tasks:
-    ```bash
-    celery -A MeroHealthAI worker --loglevel=info
+bash
+git clone https://github.com/Bijay4444/MeroHealthAI.git
+cd MeroHealthAI
+Create and activate a virtual environment:
 
-8. (Optional) Start Redis server for Celery:
+bash
+python -m venv venv
+source venv/bin/activate  # On Windows: venv\Scripts\activate
+Install dependencies:
 
-    Ensure Redis is running on your system. Use the following command to start Redis if installed locally:
-    ```bash
-    redis-server
+bash
+pip install -r requirements.txt
+Set up environment variables:
+Create a .env file in the project root with the following variables:
 
-#### API EndPoints
-    The project provides RESTful APIs for all core functionalities. Below is a brief overview of the available endpoints:
+text
+SECRET_KEY=your_secret_key
+DEBUG=True
+FCM_SERVER_KEY=your_firebase_cloud_messaging_key
+Run migrations:
 
-    User Management:
-        POST /api/users/register/: Register a new user.
-        POST /api/users/login/: Login user and generate token.
-        GET /api/users/profile/: Retrieve user profile.
+bash
+python manage.py migrate
+Start Redis server (for Celery):
 
-    Medications:
-        GET /api/medications/: List all medications.
-        POST /api/medications/: Add a new medication.
+bash
+redis-server --port 6380
+Start Celery worker:
 
-    Schedules:
-        GET /api/schedules/: List all schedules.
-        POST /api/schedules/: Create a new schedule.
+bash
+celery -A MeroHealthAI worker -l info
+Start Celery beat scheduler:
 
-    Chat:
-        GET /api/chat/messages/: Retrieve chat messages.
-        POST /api/chat/messages/: Send a new message.
+bash
+celery -A MeroHealthAI beat -l info
+Run the development server:
 
-##### Technologies Used
-    Backend: Django, Django REST Framework
-    Task Queue: Celery with Redis
-    Database: SQLite (Development), PostgreSQL (Production-ready)
-    Authentication: Token-based authentication (e.g., JWT)
-    Real-time Communication: Django Channels
+bash
+python manage.py runserver 0.0.0.0:8080
+API Endpoints
+Authentication
+POST /users/token/: Obtain JWT token
 
-###### Contribution Guidelines
+POST /users/token/refresh/: Refresh JWT token
 
-    We welcome contributions! Please follow these steps to contribute:
+POST /users/register/: Register new user
 
-        Fork the repository.
-        Create a feature branch (git checkout -b feature-name).
-        Commit your changes (git commit -m 'Add feature-name').
-        Push to the branch (git push origin feature-name).
-        Open a pull request.
+Medications
+GET /medications/: List all medications
 
-###### License
+POST /medications/: Create new medication
 
-This project is licensed under the MIT License. See the LICENSE file for more details.
+GET /medications/{id}/: Retrieve medication details
+
+PUT /medications/{id}/: Update medication
+
+DELETE /medications/{id}/: Delete medication
+
+Schedules
+GET /medications/schedules/: List all medication schedules
+
+POST /medications/create-with-schedule/: Create medication with schedule
+
+GET /schedules/reminders/: List all reminders
+
+POST /schedules/reminders/{id}/mark-taken/: Mark reminder as taken
+
+POST /schedules/reminders/{id}/mark-skipped/: Mark reminder as skipped
+
+Adherence Records
+GET /schedules/adherence-records/: Get adherence records
+
+GET /schedules/adherence-records/{id}/: Get specific adherence record
+
+Project Structure
+text
+MeroHealthAI/
+├── MeroHealthAI/          # Project settings
+├── users/                 # User authentication and management
+├── medications/           # Medication management
+├── schedules/             # Reminder scheduling and adherence tracking
+├── chat/                  # Communication features
+├── requirements.txt       # Project dependencies
+└── README.md              # Project documentation
+Celery Tasks
+The project uses Celery for scheduled tasks:
+
+generate_daily_reminders: Creates reminders for medications (runs daily at midnight)
+
+check_upcoming_reminders: Checks for upcoming reminders (runs every minute)
+
+clean_old_reminders: Cleans up old reminders (runs weekly)
+
+Timezone Handling
+The system is designed to work with Nepal timezone (Asia/Kathmandu) by default but supports timezone-aware scheduling for reminders.
+
+Contributing
+Fork the repository
+
+Create your feature branch: git checkout -b feature/my-new-feature
+
+Commit your changes: git commit -am 'Add some feature'
+
+Push to the branch: git push origin feature/my-new-feature
+
+Submit a pull request
+
+License
+This project is licensed under the MIT License - see the LICENSE file for details.
