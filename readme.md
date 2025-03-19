@@ -1,4 +1,4 @@
-# MeroHealthAI - Medication Reminder System
+# MeroHealth - Medication Reminder System
 
 A comprehensive medication management system designed to help users track and adhere to their medication schedules through timely reminders and adherence monitoring.
 
